@@ -66,6 +66,55 @@ public class TeleopInput {
 	public boolean isIntakeButtonPressed() {
 		return leftJoystick.getRawButton(2);
 	}
+	/**
+	 * Get the value of the intake button.
+	 * @return True if button is pressed
+	 */
+	public boolean isHighButtonPressed() {
+		return leftJoystick.getRawButton(2);
+	}
+	/**
+	 * Get the value of the intake button.
+	 * @return True if button is pressed
+	 */
+	public boolean isMidButtonPressed() {
+		return leftJoystick.getRawButton(2);
+	}
+	/**
+	 * Get the value of the intake button.
+	 * @return True if button is pressed
+	 */
+	public boolean isLowButtonPressed() {
+		return leftJoystick.getRawButton(2);
+	}
+	/**
+	 * Get the value of the intake button.
+	 * @return True if button is pressed
+	 */
+	public boolean isUpButtonPressed() {
+		return leftJoystick.getRawButton(2);
+	}
+	/**
+	 * Get the value of the intake button.
+	 * @return True if button is pressed
+	 */
+	public boolean isDownButtonPressed() {
+		return leftJoystick.getRawButton(2);
+	}
+	/**
+	 * Get the value of the intake button.
+	 * @return True if button is pressed
+	 */
+	public boolean isReleaseButtonPressed() {
+		return leftJoystick.getRawButton(2);
+	}
+	/**
+	 * Get the value of the intake button.
+	 * @return True if button is pressed
+	 */
+	public boolean isThrottleForward() {
+		return leftJoystick.getThrottle() <= 0;
+	}
 
 	/* ------------------------ Right Joystick ------------------------ */
 	/**
