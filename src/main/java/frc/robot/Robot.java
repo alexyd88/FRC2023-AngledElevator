@@ -7,7 +7,9 @@ package frc.robot;
 import edu.wpi.first.wpilibj.TimedRobot;
 
 // Systems
-import frc.robot.systems.FSMSystem;
+import frc.robot.systems.ElevatorArmFSM;
+import frc.robot.HardwareMap;
+import frc.robot.systems.SpinningIntakeFSM;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -17,7 +19,8 @@ public class Robot extends TimedRobot {
 	private TeleopInput input;
 
 	// Systems
-	private FSMSystem fsmSystem;
+	private ElevatorArmFSM fsmSystem;
+	private SpinningIntakeFSM spinningIntake;
 
 	/**
 	 * This function is run when the robot is first started up and should be used for any
@@ -29,29 +32,54 @@ public class Robot extends TimedRobot {
 		input = new TeleopInput();
 
 		// Instantiate all systems here
-		fsmSystem = new FSMSystem();
+		if (!HardwareMap.isElevatorArmDisabled()) {
+			fsmSystem = new ElevatorArmFSM();
+		}
+		if (!HardwareMap.isSpinningIntakeDisabled()) {
+			spinningIntake = new SpinningIntakeFSM();
+		}
 	}
 
 	@Override
 	public void autonomousInit() {
 		System.out.println("-------- Autonomous Init --------");
-		fsmSystem.reset();
+		if (!HardwareMap.isElevatorArmDisabled()) {
+			fsmSystem.reset();
+		}
+		if (!HardwareMap.isSpinningIntakeDisabled()) {
+			spinningIntake.reset();
+		}
 	}
 
 	@Override
 	public void autonomousPeriodic() {
-		fsmSystem.update(null);
+		if (!HardwareMap.isElevatorArmDisabled()) {
+			fsmSystem.update(null);
+		}
+		if (!HardwareMap.isSpinningIntakeDisabled()) {
+			spinningIntake.update(null);
+		}
 	}
 
 	@Override
 	public void teleopInit() {
 		System.out.println("-------- Teleop Init --------");
-		fsmSystem.reset();
+		if (!HardwareMap.isElevatorArmDisabled()) {
+			fsmSystem.reset();
+		}
+		if (!HardwareMap.isSpinningIntakeDisabled()) {
+			spinningIntake.reset();
+		}
 	}
 
 	@Override
 	public void teleopPeriodic() {
-		fsmSystem.update(input);
+		if (!HardwareMap.isElevatorArmDisabled()) {
+			fsmSystem.update(input);
+		}
+		if (!HardwareMap.isSpinningIntakeDisabled()) {
+			spinningIntake.update(input);
+		}
 	}
 
 	@Override
