@@ -7,24 +7,46 @@ import com.revrobotics.CANSparkMax;
 
 // Robot Imports
 import frc.robot.TeleopInput;
+import net.thefletcher.revrobotics.enums.SparkMaxLimitSwitchType;
 import frc.robot.HardwareMap;
+import com.revrobotics.SparkMaxPIDController;
+import com.revrobotics.SparkMaxLimitSwitch;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
-public class FSMSystem {
+public class ElevatorArmFSM {
 	/* ======================== Constants ======================== */
 	// FSM state definitions
 	public enum FSMState {
-		START_STATE,
-		OTHER_STATE
+		IDLE,
+		HIGH,
+		MIDDLE,
+		LOW,
+		UP,
+		DOWN
 	}
 
-	private static final float MOTOR_RUN_POWER = 0.1f;
+	private static final float UP_POWER = 0.1f;
+	private static final float DOWN_POWER = 0.1f;
+	private static final double PID_CONSTANT_ARM_P = 0.00000001;
+	private static final double PID_CONSTANT_ARM_I = 0.00000001;
+	private static final double PID_CONSTANT_ARM_D = 0.00000001;
+	private static final float MAX_UP_POWER = 0.2f;
+	private static final float MAX_DOWN_POWER = -0.2f;
+	// arbitrary encoder amounts
+	private static final float LOW_ENCODER_ROTATIONS = -5;
+	private static final float MID_ENCODER_ROTATIONS = 50;
+	private static final float HIGH_ENCODER_ROTATIONS = 100;
 
 	/* ======================== Private variables ======================== */
 	private FSMState currentState;
 
 	// Hardware devices should be owned by one and only one system. They must
 	// be private to their owner system and may not be used elsewhere.
-	private CANSparkMax exampleMotor;
+	private CANSparkMax armMotor;
+	private SparkMaxPIDController pidControllerArm;
+	private SparkMaxLimitSwitch limitSwitchHigh;
+	private SparkMaxLimitSwitch limitSwitchLow;
+	private double currentEncoder;
 
 	/* ======================== Constructor ======================== */
 	/**
@@ -32,11 +54,20 @@ public class FSMSystem {
 	 * one-time initialization or configuration of hardware required. Note
 	 * the constructor is called only once when the robot boots.
 	 */
-	public FSMSystem() {
+	public ElevatorArmFSM() {
 		// Perform hardware init
-		exampleMotor = new CANSparkMax(HardwareMap.CAN_ID_SPARK_SHOOTER,
+		armMotor = new CANSparkMax(HardwareMap.CAN_ID_ARM,
 										CANSparkMax.MotorType.kBrushless);
-
+		armMotor.setIdleMode(CANSparkMax.IdleMode.kBrake);
+		limitSwitchHigh = armMotor.getForwardLimitSwitch(SparkMaxLimitSwitch.Type.kNormallyClosed);
+		limitSwitchLow = armMotor.getReverseLimitSwitch(SparkMaxLimitSwitch.Type.kNormallyClosed);
+		limitSwitchHigh.enableLimitSwitch(true);
+		limitSwitchLow.enableLimitSwitch(true);
+		pidControllerArm = armMotor.getPIDController();
+		pidControllerArm.setP(PID_CONSTANT_ARM_P);
+		pidControllerArm.setI(PID_CONSTANT_ARM_I);
+		pidControllerArm.setD(PID_CONSTANT_ARM_D);
+		pidControllerArm.setOutputRange(MAX_DOWN_POWER, MAX_UP_POWER);
 		// Reset state machine
 		reset();
 	}
@@ -58,7 +89,7 @@ public class FSMSystem {
 	 * Ex. if the robot is enabled, disabled, then reenabled.
 	 */
 	public void reset() {
-		currentState = FSMState.START_STATE;
+		currentState = FSMState.IDLE;
 
 		// Call one tick of update to ensure outputs reflect start state
 		update(null);
@@ -70,15 +101,31 @@ public class FSMSystem {
 	 *        the robot is in autonomous mode.
 	 */
 	public void update(TeleopInput input) {
+		if (input == null) {
+			return;
+		}
+		if (currentState != FSMState.IDLE) {
+			currentEncoder = armMotor.getEncoder().getPosition();
+		}
 		switch (currentState) {
-			case START_STATE:
-				handleStartState(input);
+			case IDLE:
+				handleIdleState(input);
 				break;
-
-			case OTHER_STATE:
-				handleOtherState(input);
+			case HIGH:
+				handleHighState(input);
 				break;
-
+			case MIDDLE:
+				handleMiddleState(input);
+				break;
+			case LOW:
+				handleLowState(input);
+				break;
+			case UP:
+				handleUpState(input);
+				break;
+			case DOWN:
+				handleDownState(input);
+				break;
 			default:
 				throw new IllegalStateException("Invalid state: " + currentState.toString());
 		}
@@ -96,17 +143,52 @@ public class FSMSystem {
 	 * @return FSM state for the next iteration
 	 */
 	private FSMState nextState(TeleopInput input) {
+		if (input == null) {
+			return FSMState.IDLE;
+		}
 		switch (currentState) {
-			case START_STATE:
-				if (input != null) {
-					return FSMState.OTHER_STATE;
-				} else {
-					return FSMState.START_STATE;
+			case IDLE:
+				if (input.isHighButtonPressed()) {
+					return FSMState.HIGH;
+				} else if (input.isMidButtonPressed()) {
+					return FSMState.MIDDLE;
+				} else if (input.isLowButtonPressed()) {
+					return FSMState.LOW;
+				} else if (input.isUpButtonPressed()) {
+					return FSMState.UP;
+				} else if (input.isDownButtonPressed()) {
+					return FSMState.DOWN;
 				}
-
-			case OTHER_STATE:
-				return FSMState.OTHER_STATE;
-
+			case HIGH:
+				if (input.isHighButtonPressed()) {
+					return FSMState.HIGH;
+				} else {
+					return FSMState.IDLE;
+				}
+			case MIDDLE:
+				if (input.isMidButtonPressed()) {
+					return FSMState.MIDDLE;
+				} else {
+					return FSMState.IDLE;
+				}
+			case LOW:
+				if (input.isLowButtonPressed()) {
+					return FSMState.LOW;
+				} else {
+					return FSMState.IDLE;
+				}
+			case UP:
+				if (input.isUpButtonPressed()) {
+					return FSMState.UP;
+				} else {
+					return FSMState.IDLE;
+				}
+			case DOWN:
+				if (input.isDownButtonPressed()) {
+					return FSMState.DOWN;
+				} else {
+					return FSMState.IDLE;
+				}
 			default:
 				throw new IllegalStateException("Invalid state: " + currentState.toString());
 		}
@@ -118,15 +200,22 @@ public class FSMSystem {
 	 * @param input Global TeleopInput if robot in teleop mode or null if
 	 *        the robot is in autonomous mode.
 	 */
-	private void handleStartState(TeleopInput input) {
-		exampleMotor.set(0);
+	private void handleIdleState(TeleopInput input) {
+		pidControllerArm.setReference(currentEncoder, CANSparkMax.ControlType.kPosition);
 	}
-	/**
-	 * Handle behavior in OTHER_STATE.
-	 * @param input Global TeleopInput if robot in teleop mode or null if
-	 *        the robot is in autonomous mode.
-	 */
-	private void handleOtherState(TeleopInput input) {
-		exampleMotor.set(MOTOR_RUN_POWER);
+	private void handleHighState(TeleopInput input) {
+		pidControllerArm.setReference(HIGH_ENCODER_ROTATIONS, CANSparkMax.ControlType.kPosition);
+	}
+	private void handleMiddleState(TeleopInput input) {
+		pidControllerArm.setReference(MID_ENCODER_ROTATIONS, CANSparkMax.ControlType.kPosition);
+	}
+	private void handleLowState(TeleopInput input) {
+		pidControllerArm.setReference(LOW_ENCODER_ROTATIONS, CANSparkMax.ControlType.kPosition);
+	}
+	private void handleUpState(TeleopInput input) {
+		pidControllerArm.setReference(UP_POWER, CANSparkMax.ControlType.kDutyCycle);
+	}
+	private void handleDownState(TeleopInput input) {
+		pidControllerArm.setReference(DOWN_POWER, CANSparkMax.ControlType.kDutyCycle);
 	}
 }
