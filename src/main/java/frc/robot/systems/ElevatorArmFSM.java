@@ -7,7 +7,6 @@ import com.revrobotics.CANSparkMax;
 
 // Robot Imports
 import frc.robot.TeleopInput;
-import net.thefletcher.revrobotics.enums.SparkMaxLimitSwitchType;
 import frc.robot.HardwareMap;
 import com.revrobotics.SparkMaxPIDController;
 import com.revrobotics.SparkMaxLimitSwitch;
@@ -154,9 +153,9 @@ public class ElevatorArmFSM {
 					return FSMState.MIDDLE;
 				} else if (input.isLowButtonPressed()) {
 					return FSMState.LOW;
-				} else if (input.isUpButtonPressed()) {
+				} else if (input.isElevatorUpButtonPressed()) {
 					return FSMState.UP;
-				} else if (input.isDownButtonPressed()) {
+				} else if (input.isElevatorDownButtonPressed()) {
 					return FSMState.DOWN;
 				}
 			case HIGH:
@@ -178,13 +177,13 @@ public class ElevatorArmFSM {
 					return FSMState.IDLE;
 				}
 			case UP:
-				if (input.isUpButtonPressed()) {
+				if (input.isElevatorUpButtonPressed()) {
 					return FSMState.UP;
 				} else {
 					return FSMState.IDLE;
 				}
 			case DOWN:
-				if (input.isDownButtonPressed()) {
+				if (input.isElevatorDownButtonPressed()) {
 					return FSMState.DOWN;
 				} else {
 					return FSMState.IDLE;
